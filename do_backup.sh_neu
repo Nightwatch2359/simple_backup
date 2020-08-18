@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# Dieses Script legt 9 Generationen des htdocs-Verzeichnisses unter Nutzung von Hardlinks an
+#
+# declare -a BACKUPDIR
+# BACKUPDIR
+#ROOTDIR=/opt/bbk/was
+export GENERATIONS=9
+ROOTDIR=~
+DIRECTORY=pkg
+SOURCEDIR=${ROOTDIR}/${DIRECTORY}
+ECHO=echo
+
+
+for I in $(seq $GENERATIONS -1 0)
+do
+  BACKUPDIR[${I}]=${ROOTDIR}/.${DIRECTORY}.${I}
+  $ECHO ${BACKUPDIR[${I}]}
+done
+# export BACKUPDIR[${I}]
+
+
+# letzte Generation löschen
+if [ -d ${BACKUPDIR[$GENERATIONS]} ] ; then
+  $ECHO rm -rf ${BACKUPDIR[$GENERATIONS]}
+fi
+
+echo "PAUSE"
+read DUMMY
+
+for I in $(seq $(($GENERATIONS -1)) -1 1)
+do
+  # Generationen 1 - ($GENERATIONS - 1) verschieben
+  J=$(($I + 1))
+  [ -d ${BACKUPDIR[$I]} ] &&  $ECHO mv ${BACKUPDIR[$I]} ${BACKUPDIR[$J]}
+done
+# Generation 0 per Hardlink nach Gen 1 kopieren
+[ -d ${BACKUPDIR[0]} ] && $ECHO cp -al ${BACKUPDIR[0]} ${BACKUPDIR[1]}
+
+# Source nach Gen 0 kopieren
+$ECHO rsync -q -av -H --delete $SOURCEDIR ${BACKUPDIR[0]}
+# Backupdir 0 mit Zeitstempel versehen
+$ECHO touch $BACKUPDIR[0]
+echo "PAUSE"
+read DUMMY
